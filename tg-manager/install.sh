@@ -12,19 +12,19 @@ echo "== 2/5 Claude Code"
 command -v ~/.local/bin/claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 if ! grep -q CLAUDE_TOKEN .env 2>/dev/null; then
   echo "Сейчас откроется вход в Claude. Открой ссылку на телефоне, войди, скопируй код и вставь сюда."
-  ~/.local/bin/claude setup-token
-  read -rp "Вставь токен, который показался выше (sk-ant-oat...): " TOK
+  ~/.local/bin/claude setup-token </dev/tty
+  read -rp "Вставь токен, который показался выше (sk-ant-oat...): " TOK </dev/tty
   echo "CLAUDE_TOKEN=$TOK" >> .env
 fi
 echo "== 3/5 Ключи Телеги"
 if ! grep -q API_ID .env 2>/dev/null; then
   echo "Зайди на https://my.telegram.org с номером менеджера → API development tools → создай приложение."
-  read -rp "api_id: " AID; read -rp "api_hash: " AH
+  read -rp "api_id: " AID; read -rp "api_hash: " AH </dev/tty
   printf 'API_ID=%s\nAPI_HASH=%s\n' "$AID" "$AH" >> .env
 fi
 chmod 600 .env
 echo "== 4/5 Вход в акк менеджера"
-[ -s session.txt ] || venv/bin/python login.py
+[ -s session.txt ] || venv/bin/python login.py </dev/tty
 echo "== 5/5 Служба"
 cat > /etc/systemd/system/tgmanager.service <<UNIT
 [Unit]
