@@ -41,6 +41,7 @@ import json, os, sys
 p = os.path.expanduser("~/.claude.json")
 c = json.load(open(p)) if os.path.exists(p) else {}
 c["hasCompletedOnboarding"] = True
+c["remoteDialogSeen"] = True
 c.setdefault("projects", {}).setdefault(sys.argv[1], {})["hasTrustDialogAccepted"] = True
 json.dump(c, open(p, "w"), indent=2)
 PY
