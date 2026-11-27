@@ -64,14 +64,19 @@ def ask_claude(prompt: str) -> str:
     return r.stdout.strip()
 
 
-async def answer(chat_id: int, who: str):
+async def answer(chat_id: int, who: str, uname: str = ""):
     await asyncio.sleep(WAIT)
     msgs = []
     async for m in client.iter_messages(chat_id, limit=30):
         if m.text:
             msgs.append(("МЫ" if m.out else who) + f" [{m.date:%d.%m %H:%M}]: " + m.text)
     history = "\n".join(reversed(msgs))
-    prompt = (f"Ты пишешь с аккаунта: {CFG['role']}\n\nПереписка в Telegram с {who}. Последнее сообщение внизу.\n\n{history}\n\n"
+    personal = ""
+    if CFG.get("folder") and (CFG.get("all") or uname in CFG.get("allow", []) or str(chat_id) in CFG.get("allow", [])):
+        personal = ("ВАЖНО: Ярик сам разрешил отвечать в этом чате, это может быть личная переписка (друзья, близкие). "
+                    "Отвечай как сам Ярик, живо и по-человечески, в его манере: коротко, просто, можно по-братски, "
+                    "строчными буквами, без официоза и без рекламы бота. Не игнорь. SKIP только если реально нечего ответить.\n\n")
+    prompt = (f"Ты пишешь с аккаунта: {CFG['role']}\n\n{personal}Переписка в Telegram с {who}. Последнее сообщение внизу.\n\n{history}\n\n"
               "Напиши ответ от менеджера по правилам из CLAUDE.md. Выведи только текст ответа, "
               "или SKIP, или строку ESCALATE: <что спросить у Ярика> и с новой строки ответ человеку.")
     try:
@@ -110,7 +115,7 @@ async def on_msg(event):
     t = pending.pop(event.chat_id, None)
     if t:
         t.cancel()
-    pending[event.chat_id] = asyncio.create_task(answer(event.chat_id, who))
+    pending[event.chat_id] = asyncio.create_task(answer(event.chat_id, who, uname))
 
 
 HELP = ("Команды (пиши в Избранное этого акка):\n"
