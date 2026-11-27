@@ -12,7 +12,7 @@ API_ID, API_HASH = int(ENV["API_ID"]), ENV["API_HASH"]
 SESSION = (ACC / "session.txt").read_text().strip()
 CFG = json.loads((ACC / "config.json").read_text())   # {"role": "...", "folder": "Админы Дота" | null}
 SKIP = {u.strip().lower().lstrip("@") for u in (BASE / "skip.txt").read_text().split() if u.strip()} if (BASE / "skip.txt").exists() else set()
-WAIT = 25          # ждём, пока человек допишет
+WAIT = 10          # ждём, пока человек допишет
 LOG = ACC / "log.jsonl"
 PAUSE = BASE / "PAUSE"  # создать файл = все акки молчат
 folder_ids: set[int] = set()
