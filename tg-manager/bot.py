@@ -19,10 +19,16 @@ folder_ids: set[int] = set()
 folder_at = 0.0
 
 
-async def in_folder(chat_id: int) -> bool:
-    """Если в конфиге указана папка — отвечаем только чатам из неё."""
+def save_cfg():
+    (ACC / "config.json").write_text(json.dumps(CFG, ensure_ascii=False, indent=1))
+
+
+async def in_folder(chat_id: int, uname: str) -> bool:
+    """Кому отвечаем: всем (all), или папка + ручной список allow. Управление — командами в Избранном."""
     global folder_ids, folder_at
-    if not CFG.get("folder"):
+    if CFG.get("all") or not CFG.get("folder"):
+        return True
+    if uname in CFG.get("allow", []) or str(chat_id) in CFG.get("allow", []):
         return True
     if time.time() - folder_at > 600:
         res = await client(functions.messages.GetDialogFiltersRequest())
@@ -96,7 +102,7 @@ async def on_msg(event):
     uname = (s.username or "").lower()
     if uname in SKIP or str(s.id) in SKIP:
         return
-    if not await in_folder(event.chat_id):
+    if not await in_folder(event.chat_id, uname):
         return
     who = f"@{s.username}" if s.username else (s.first_name or str(s.id))
     log(chat=who, incoming=event.raw_text)
@@ -105,6 +111,36 @@ async def on_msg(event):
     if t:
         t.cancel()
     pending[event.chat_id] = asyncio.create_task(answer(event.chat_id, who))
+
+
+HELP = ("Команды (пиши в Избранное этого акка):\n"
+        "/allow @ник — отвечать ему тоже\n/deny @ник — не отвечать\n"
+        "/all on — отвечать всем в личке, /all off — только папка и список\n"
+        "/pause, /resume — выключить/включить ответы\n/status")
+
+
+@client.on(events.NewMessage(outgoing=True, chats="me", pattern=r"^/(allow|deny|all|pause|resume|status|help)"))
+async def on_cmd(event):
+    cmd, *args = event.raw_text.split()
+    arg = args[0].lower().lstrip("@") if args else ""
+    cmd = cmd[1:]
+    if cmd == "allow" and arg:
+        CFG.setdefault("allow", []); arg in CFG["allow"] or CFG["allow"].append(arg); SKIP.discard(arg)
+    elif cmd == "deny" and arg:
+        CFG["allow"] = [a for a in CFG.get("allow", []) if a != arg]; SKIP.add(arg)
+        (BASE / "skip.txt").write_text("\n".join(sorted(SKIP)) + "\n")
+    elif cmd == "all":
+        CFG["all"] = arg != "off"
+    elif cmd == "pause":
+        PAUSE.touch()
+    elif cmd == "resume":
+        PAUSE.unlink(missing_ok=True)
+    elif cmd == "help":
+        return await event.reply(HELP)
+    save_cfg()
+    await event.reply(f"✅ {NAME}: всем={'да' if CFG.get('all') or not CFG.get('folder') else 'нет'}, "
+                      f"папка={CFG.get('folder') or '-'}, список={', '.join(CFG.get('allow', [])) or '-'}, "
+                      f"пауза={'да' if PAUSE.exists() else 'нет'}")
 
 
 async def main():
