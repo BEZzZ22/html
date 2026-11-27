@@ -33,7 +33,7 @@ mkdir -p accounts/manager accounts/main
 for A in manager main; do
   if [ ! -s accounts/$A/session.txt ]; then
     echo "--- Акк: $A ($( [ $A = main ] && echo 'твой основной' || echo 'менеджер +1 906...' ))"
-    venv/bin/python login.py $A </dev/tty
+    PYTHONIOENCODING=utf-8:surrogateescape venv/bin/python -X utf8 login.py $A </dev/tty
   fi
 done
 chmod -R go-rwx $D

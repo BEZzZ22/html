@@ -6,6 +6,16 @@ from telethon.errors import SessionPasswordNeededError
 from telethon.sessions import StringSession
 
 BASE = Path(__file__).resolve().parent
+
+
+def ask(prompt: str) -> str:
+    """input(), который не падает на русских буквах при кривой локали сервера."""
+    raw = input(prompt)
+    try:
+        return raw.encode("utf-8", "surrogateescape").decode("utf-8").strip()
+    except UnicodeError:
+        return raw.encode("latin-1", "surrogateescape").decode("utf-8", "replace").strip()
+
 NAME = sys.argv[1] if len(sys.argv) > 1 else "manager"
 ACC = BASE / "accounts" / NAME
 ACC.mkdir(parents=True, exist_ok=True)
@@ -26,22 +36,22 @@ async def qr_login(c):
         except asyncio.TimeoutError:
             print("QR устарел, показываю новый...\n")
         except SessionPasswordNeededError:
-            await c.sign_in(password=input("Облачный пароль (2FA): "))
+            await c.sign_in(password=ask("Облачный пароль (2FA): "))
             return
 
 
 async def main():
     c = TelegramClient(StringSession(), int(ENV["API_ID"]), ENV["API_HASH"], device_model="DotaRazbor " + NAME, system_version="Ubuntu")
     await c.connect()
-    phone = input(f"Акк {NAME}: просто Enter = вход по QR, или введи номер (+...): ").strip()
+    phone = ask(f"Акк {NAME}: просто Enter = вход по QR, или введи номер (+...): ").strip()
     if not phone:
         await qr_login(c)
     else:
         await c.send_code_request(phone)
         try:
-            await c.sign_in(phone, input("Код из Телеги: ").strip())
+            await c.sign_in(phone, ask("Код из Телеги: ").strip())
         except SessionPasswordNeededError:
-            await c.sign_in(password=input("Облачный пароль (2FA): "))
+            await c.sign_in(password=ask("Облачный пароль (2FA): "))
     (ACC / "session.txt").write_text(c.session.save())
     (ACC / "session.txt").chmod(0o600)
     me = await c.get_me()
