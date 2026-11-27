@@ -10,7 +10,7 @@ mkdir -p $D/accounts && cd $D
 for f in bot.py login.py CLAUDE.md; do curl -fsSL $RAW/$f -o $f; done
 [ -f skip.txt ] || curl -fsSL $RAW/skip.txt -o skip.txt
 [ -d venv ] || python3 -m venv venv
-venv/bin/pip -q install -U telethon
+venv/bin/pip -q install -U telethon qrcode
 echo "== 2/5 Claude Code"
 [ -x ~/.local/bin/claude ] || curl -fsSL https://claude.ai/install.sh | bash
 if ! grep -q CLAUDE_TOKEN .env 2>/dev/null; then
