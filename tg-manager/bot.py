@@ -93,7 +93,7 @@ async def answer(chat_id: int, who: str, uname: str = ""):
     if not out or out == "SKIP":
         log(chat=who, skip=True)
         return
-    if personal and not CFG.get("auto_personal"):
+    if personal and not CFG.get("auto_personal", True):
         # личные чаты: не шлём сами, кладём черновик Ярику в Избранное
         await client.send_message("me", f"✍️ Черновик для {who} (сам не отправил):\n\n{out}")
         log(chat=who, draft=out)
